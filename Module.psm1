@@ -14,6 +14,14 @@ Get-ChildItem -Path ( Join-Path $ScriptPath '3rd_party' ) -Filter "*.ps1" -File 
         
     }
  
+# dot sourcing classes
+Get-ChildItem -Path (Join-Path $ScriptPath 'classes') -Recurse -Filter "*.ps1" -File |
+    ForEach-Object {
+    
+        . $_.FullName
+        
+    }
+ 
 # dot sourcing transforms
 Get-ChildItem -Path (Join-Path $ScriptPath 'transforms') -Recurse -Filter "*.ps1" -File |
     ForEach-Object {
@@ -27,6 +35,10 @@ Get-ChildItem -Path ( Join-Path $ScriptPath 'functions\private' ) -Recurse -Filt
     ForEach-Object {
     
         . $_.FullName
+        ([System.Management.Automation.Language.Parser]::ParseInput((Get-Content -Path $_.FullName -Raw), [ref]$null, [ref]$null)).FindAll({ $args[0] -is [System.Management.Automation.Language.FunctionDefinitionAst] }, $false) |
+            ForEach-Object {
+                Export-ModuleMember $_.Name
+            }
         
     }
  

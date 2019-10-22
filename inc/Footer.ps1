@@ -1,6 +1,5 @@
+# initialize the configuration
+Initialize-Config
+
 # cleanup
-$ExecutionContext.SessionState.Module.OnRemove = {
-
-    # cleanup when unloading module (if any)
-
-}
+$ExecutionContext.SessionState.Module.OnRemove = {}

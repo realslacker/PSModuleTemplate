@@ -1,4 +1,6 @@
-﻿# module variables
+param([switch]$Publish)
+
+# module variables
 $ScriptPath = Split-Path (Get-Variable MyInvocation -Scope Script).Value.Mycommand.Definition -Parent
 $ModuleName = (Get-Item $ScriptPath).BaseName
 
@@ -9,7 +11,8 @@ $BuildDirectory = New-Item -Path "$ScriptPath\build\$BuildNumber\$ModuleName" -I
 # copy needed files
 @(
     '{0}.psd1' -f $ModuleName
-    'DefaultConfig.psd1'
+    'ConfigDefaults.psd1'
+    'ConfigDefinition.ps1'
 ) | ForEach-Object { Get-Item -Path ( Join-Path $ScriptPath $_ ) -ErrorAction SilentlyContinue } | Copy-Item -Destination $BuildDirectory
 
 # copy needed directories
@@ -17,6 +20,7 @@ $BuildDirectory = New-Item -Path "$ScriptPath\build\$BuildNumber\$ModuleName" -I
     'lang'
     'lib'
     'tests'
+    'data'
 ) | ForEach-Object { Get-Item -Path ( Join-Path $ScriptPath $_ ) } | Copy-Item -Destination $BuildDirectory -Recurse
 
 # copy all lib sub-directories to module
@@ -38,6 +42,22 @@ $ModuleName = (Get-Item (Get-Variable MyInvocation -Scope Script).Value.Mycomman
 
 # include the module header
 Get-Content -Path ( Join-Path $ScriptPath 'inc\Header.ps1' ) | Add-Content -Path $ModuleFile
+
+# dot sourcing classes
+Get-ChildItem -Path (Join-Path $ScriptPath 'classes') -Recurse -Filter "*.ps1" -File |
+    ForEach-Object {
+    
+        Get-Content -Path $_.FullName -Raw | Add-Content -Path $ModuleFile
+        
+    }
+ 
+# dot sourcing transforms
+Get-ChildItem -Path (Join-Path $ScriptPath 'transforms') -Recurse -Filter "*.ps1" -File |
+    ForEach-Object {
+    
+        Get-Content -Path $_.FullName -Raw | Add-Content -Path $ModuleFile
+        
+    }
 
 # copy all public script contents to module
 Get-ChildItem -Path ( Join-Path $ScriptPath 'functions\public' ) -Recurse -Filter "*.ps1" -File |
@@ -79,3 +99,10 @@ $ModuleManifestSplat = @{
     FunctionsToExport = $ExportModuleMembers
 }
 Update-ModuleManifest @ModuleManifestSplat
+
+# publish
+if ( $Publish ) {
+
+    Publish-Module -Path "$BuildDirectory"
+
+}
